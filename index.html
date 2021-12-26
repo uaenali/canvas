@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -7,11 +8,12 @@
     <title>画板</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <canvas id="canvas" width="100" height="100"></canvas>
     <script>
-        
-       
+
+
         // 画线
         // canvas 都设置跟屏幕等高 还是出现滚动条,如图片下面会出现空隙,canvas默认的display是inline元素，设置宽高是没有用的
         let canvas = document.getElementById("canvas");
@@ -19,37 +21,110 @@
         canvas.height = document.documentElement.clientHeight//获取的是文档的高度，而不是body的高度
         let ctx = canvas.getContext("2d");
 
+        ctx.fillStyle = "black";
+        // ctx.strokeStyle = 'none';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 8;
+        // 线的边缘变成圆的
+        ctx.lineCap = "round";
+        // 节点连接会有问题 画出的线是锯齿状的，lineWidth=4 是不明显的
+
+        // drawLine(0, 0, 300, 300)
+        // drawLine(300, 300, 400, 200 )//连接会有很大的缺口,线之间不连续。解决思路1.在缺口哪里补一个圆，将他堵起来 2.将线与线连接边缘（交界处）变成圆的
+
         // 设置一个信号
         let painting = false
+        // 1.声明上一次
+        let last
 
-        ctx.fillStyle = "black";
-        ctx.strokeStyle = 'none';
-        
-        // 按下鼠标 变绿灯
-        canvas.onmousedown = () => {
-            painting = true
-        }
-        // 在move时判断是红灯还是绿灯
-        canvas.onmousemove = (e) => {
-            if (painting === true) {
-                // ctx.fillRect(e.clientX - 5, e.clientY - 5, 10, 10);
-                ctx.beginPath();
-                ctx.arc(e.clientX, e.clientY, 10, 0, 2 * Math.PI);
-                ctx.stroke();
-                ctx.fill();
-            } else {
-                console.log('灯不亮什么都不做');
+
+        // 优化，让手机也可以使用画板，但是切到手机毫无反应，下边监听的鼠标事件
+        // 检测浏览器是否支持鼠标事件
+        // 浏览器是否支持移动端的
+        let isTouchDevice = 'ontouchstart' in document.documentElement;
+        // 如果支持移动端
+        if (isTouchDevice) {
+            // 开始触发touch事件时，获取第一个x y， 将这个x y作为last
+            canvas.ontouchstart = (e) => {
+                let x = e.touches[0].clientX
+                let y = e.touches[0].clientY
+                last = [x, y]
             }
+            canvas.ontouchmove = (e) => {
+                // 这个e包含了多个手指的事件(滑动屏幕不一定是单个手指去滑动,所以是touches,0: Touch代表的是一个手指，这里面就有ClientX,Y)
+                let x = e.touches[0].clientX
+                let y = e.touches[0].clientY
+                drawLine(last[0], last[1], x, y)
+                last = [x, y]
+                //在手机端，没按下鼠标onmousedown事件，所以没有第一个last，所以我现在也连接不到上一个last
+
+                // ctx.beginPath();
+                // ctx.arc(x, y, 10, 0, 2 * Math.PI);
+                // ctx.stroke();
+                // ctx.fill();
+
+                // console.log(x, y);
+                // console.log(e.touches[0]);//通过log的方法来获取
+                // 移动端有个好处就是不用监听，鼠标抬起和按下，手指抬起自动就停下画了
+            }
+            // console.log('目前什么也没写');
+        } else {
+            // 如果不是移动触屏设备，那就监听鼠标的3个事件
+
+            // 按下鼠标 变绿灯
+            canvas.onmousedown = (e) => {
+                painting = true
+                // 2.当鼠标按下时，将这个点作为上一次的点
+                last = [e.clientX, e.clientY]
+            }
+
+            // 在move时判断是红灯还是绿灯
+            canvas.onmousemove = (e) => {
+                if (painting === true) {
+                    // console.log(last);
+                    // 3.每次动的时候连接上一次 与这一次，同时实时更新当前已经完成的
+                    drawLine(last[0], last[1], e.clientX, e.clientY)
+                    // 每画一个点，都会从0发射，画的直线，但问题出现在，起点是(0,0)
+                    // 但是现在我想要的是上一个点的位置，与现在的位置连在一起划线，但又不知道上个点是什么？
+
+                    // 当我在动的时候，每次连接上一次与这一次
+                    // 让上一次点的实时更新，又作为下次的上一次
+                    last = [e.clientX, e.clientY]
+
+                    // ctx.fillRect(e.clientX - 5, e.clientY - 5, 10, 10);
+                    // ctx.beginPath();
+                    // // 圆
+                    // ctx.arc(e.clientX, e.clientY, 10, 0, 2 * Math.PI);
+                    // ctx.stroke();
+                    // ctx.fill();
+                }
+                // else {
+                //     console.log('灯不亮什么都不做');
+                // }
+            }
+
+            // 松开鼠标 变成红灯
+            canvas.onmouseup = () => {
+                painting = false
+            }
+
         }
 
-        // 松开鼠标 变成红灯
-        canvas.onmouseup = () => {
-            painting = false
+        function drawLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
         }
 
-                
+        // 移动端 在其他浏览器中打开没有问题， 但是在微信浏览器中打开会（上滑没问题 下滑屏幕会跟着你手指一起下滑）
+        // pc端 画的够快 点和点之间 断开 连不成一条线
 
-            
+
+
+
+
     </script>
 </body>
+
 </html>
