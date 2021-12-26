@@ -5,8 +5,38 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>画板</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    hi
+    <div id="canvas"></div>
+    <script>
+        canvas.onclick = (e) => {
+            // console.log(e);
+            console.log(e.clientX);
+            console.log(e.clientY);
+            // 用户点击画板出现圆点，创建div放鼠标的位置
+            // 让文档创建一个标签
+            let div = document.createElement('div')//这里创建div没有说放在页面里，默认放在了内存中
+            // 让div出现在 XY的位置，用绝对定位
+            div.style.position = 'absolute'
+            div.style.left = e.clientX + 'px'
+            div.style.top = e.clientY + 'px'
+            // div.style.border = '1px solid red'
+            div.style.width = '10px'
+            div.style.height = '10px'
+             // 希望鼠标出现在打的点的中间而不是上方
+            div.style.marginLeft = '-5px'
+            div.style.marginTop = '-5px'
+            // 将打的点变成圆形的
+            div.style.borderRadius = '50%'
+            div.style.backgroundColor = 'black'
+            // 让div出现在canvas中
+            canvas.appendChild(div)
+           
+
+
+
+        }
+    </script>
 </body>
 </html>
